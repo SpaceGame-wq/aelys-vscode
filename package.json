@@ -1,14 +1,19 @@
 {
-    "name": "aelys-support",
-    "displayName": "Aelys Language Support",
-    "description": "Syntax highlighting for the Aelys programming language",
+    "name": "aelys-lang",
+    "displayName": "Aelys Programming Language",
+    "description": "Full syntax highlighting and support for the Aelys language",
     "version": "0.1.0",
+    "publisher": "AlexisGr", 
     "engines": {
         "vscode": "^1.70.0"
     },
-    "categories": [
-        "Programming Languages"
-    ],
+    "icon": "icon.png",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ton-pseudo/aelys-vscode"
+    },
+    "license": "MIT",
+    "categories": ["Programming Languages"],
     "contributes": {
         "languages": [{
             "id": "aelys",
