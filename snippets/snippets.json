@@ -1,0 +1,11 @@
+{
+    "Function": {
+      "prefix": "fn",
+      "body": [
+        "fn ${1:name}(${2:params}) ${3:-> type} {",
+        "\t$0",
+        "}"
+      ],
+      "description": "Define a function"
+    }
+  }
