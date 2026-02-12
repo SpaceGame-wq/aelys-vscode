@@ -1,11 +1,281 @@
 {
-    "Function": {
+    "--- CORE LANGUAGE ---": {
       "prefix": "fn",
       "body": [
-        "fn ${1:name}(${2:params}) ${3:-> type} {",
+        "fn ${1:name}(${2:params}) ${3:-> ${4:type}} {",
         "\t$0",
         "}"
       ],
       "description": "Define a function"
+    },
+  
+    "Main Function Template": {
+      "prefix": "main",
+      "body": [
+        "fn main() {",
+        "\t$0",
+        "}",
+        "",
+        "main()"
+      ],
+      "description": "Standard main function entry point"
+    },
+  
+    "Let binding": {
+      "prefix": "let",
+      "body": "let ${1:name} = ${2:value}",
+      "description": "Immutable variable"
+    },
+  
+    "Mut binding": {
+      "prefix": "mut",
+      "body": "let mut ${1:name} = ${2:value}",
+      "description": "Mutable variable"
+    },
+  
+    "If block": {
+      "prefix": "if",
+      "body": [
+        "if ${1:condition} {",
+        "\t$0",
+        "}"
+      ],
+      "description": "If condition"
+    },
+  
+    "If Else block": {
+      "prefix": "ifelse",
+      "body": [
+        "if ${1:condition} {",
+        "\t$2",
+        "} else {",
+        "\t$0",
+        "}"
+      ],
+      "description": "If-Else condition"
+    },
+  
+    "While loop": {
+      "prefix": "while",
+      "body": [
+        "while ${1:condition} {",
+        "\t$0",
+        "}"
+      ],
+      "description": "While loop"
+    },
+  
+    "For range loop": {
+      "prefix": "for",
+      "body": [
+        "for ${1:i} in ${2:0}..${3:count} {",
+        "\t$0",
+        "}"
+      ],
+      "description": "For loop (exclusive range)"
+    },
+  
+    "For inclusive range loop": {
+      "prefix": "forin",
+      "body": [
+        "for ${1:i} in ${2:0}..=${3:count} {",
+        "\t$0",
+        "}"
+      ],
+      "description": "For loop (inclusive range)"
+    },
+  
+    "Needs (Import)": {
+      "prefix": "needs",
+      "body": "needs std.${1:module}",
+      "description": "Import a standard module"
+    },
+  
+    "Needs as alias": {
+      "prefix": "needsas",
+      "body": "needs std.${1:module} as ${2:alias}",
+      "description": "Import a module with alias"
+    },
+  
+    "--- DATA STRUCTURES ---": {
+      "prefix": "vec",
+      "body": "let ${1:v} = Vec<${2:Int}>[]",
+      "description": "Create a new Vector"
+    },
+  
+    "Vector with initial data": {
+      "prefix": "vecinit",
+      "body": "let ${1:v} = Vec[${2:elements}]",
+      "description": "Create Vector with data"
+    },
+  
+    "Array creation": {
+      "prefix": "arr",
+      "body": "let ${1:a} = Array<${2:Int}>[${3:elements}]",
+      "description": "Create a fixed-size Array"
+    },
+  
+    "Array of size": {
+      "prefix": "arrsize",
+      "body": "let ${1:a} = Array<${2:Int}>(${3:size})",
+      "description": "Create Array with pre-allocated size"
+    },
+  
+    "--- ATTRIBUTES ---": {
+      "prefix": "@no_gc",
+      "body": [
+        "@no_gc",
+        "fn ${1:name}(${2:params}) {",
+        "\t$0",
+        "}"
+      ],
+      "description": "Function with manual memory management (No GC)"
+    },
+  
+    "--- STD.IO ---": {
+      "prefix": "print",
+      "body": "print(\"${1:message}\")",
+      "description": "Print to console"
+    },
+  
+    "Println with interpolation": {
+      "prefix": "pri",
+      "body": "print(\"${1:value: }{${2:var}}\")",
+      "description": "Print with interpolated variable"
+    },
+  
+    "Input prompt": {
+      "prefix": "input",
+      "body": "let ${1:name} = input(\"${2:Prompt: }\")",
+      "description": "Read line from user"
+    },
+  
+    "Clear screen": {
+      "prefix": "cls",
+      "body": "clear_screen()",
+      "description": "Clear terminal screen"
+    },
+  
+    "--- STD.FS ---": {
+      "prefix": "read_text",
+      "body": "let ${1:content} = fs.read_text(\"${2:file.txt}\")",
+      "description": "Read entire file as string"
+    },
+  
+    "Write text file": {
+      "prefix": "write_text",
+      "body": "fs.write_text(\"${1:file.txt}\", ${2:content})",
+      "description": "Write string to file"
+    },
+  
+    "--- STD.MATH ---": {
+      "prefix": "randint",
+      "body": "math.randint(${1:min}, ${2:max})",
+      "description": "Random integer in range"
+    },
+  
+    "Clamp value": {
+      "prefix": "clamp",
+      "body": "math.clamp(${1:val}, ${2:min}, ${3:max})",
+      "description": "Clamp value to range"
+    },
+  
+    "--- STD.CONVERT ---": {
+      "prefix": "to_string",
+      "body": "convert.to_string(${1:value})",
+      "description": "Convert value to string"
+    },
+  
+    "Parse Integer": {
+      "prefix": "parse_int",
+      "body": "convert.parse_int(${1:string})",
+      "description": "Parse string to int"
+    },
+  
+    "--- LZW & COMPRESSION TEMPLATES ---": {
+      "prefix": "lzw_dict",
+      "body": [
+        "fn init_dictionary() {",
+        "\tlet dict = Vec[\"A\"]",
+        "\tdict.pop()",
+        "\tfor i in 0..256 {",
+        "\t\tdict.push(cv.chr(i))",
+        "\t}",
+        "\treturn dict",
+        "}"
+      ],
+      "description": "Initialize LZW dictionary"
+    },
+  
+    "LZW Find sequence": {
+      "prefix": "lzw_find",
+      "body": [
+        "fn find_in_dict(dict, needle: string) -> int {",
+        "\tlet d_len = dict.len()",
+        "\tlet mut idx = d_len - 1",
+        "\twhile idx >= 0 {",
+        "\t\tif dict[idx] == needle { return idx }",
+        "\t\tidx = idx - 1",
+        "\t}",
+        "\treturn -1",
+        "}"
+      ],
+      "description": "Linear search for LZW dictionary"
+    },
+  
+    "Binary Save Template": {
+      "prefix": "save_bin",
+      "body": [
+        "fn save_binary(path: string, codes: Vec<Int>) {",
+        "\tlet mut encoded = \"\"",
+        "\tfor i in 0..codes.len() {",
+        "\t\tencoded = encoded + cv.chr(codes[i])",
+        "\t}",
+        "\tfs.write_text(path, encoded)",
+        "}"
+      ],
+      "description": "Save codes to Unicode-Binary file"
+    },
+  
+    "--- NETWORK ---": {
+      "prefix": "tcp_server",
+      "body": [
+        "needs std.net as net",
+        "needs std.io",
+        "",
+        "fn start_server() {",
+        "\tlet listener = net.listen(\"0.0.0.0\", ${1:8080})",
+        "\tprint(\"Server listening on port ${1:8080}...\")",
+        "",
+        "\twhile true {",
+        "\t\tlet client = net.accept(listener)",
+        "\t\tnet.send(client, \"HTTP/1.1 200 OK\\r\\nContent-Length: 5\\r\\n\\r\\nHello\")",
+        "\t\tnet.close(client)",
+        "\t}",
+        "}"
+      ],
+      "description": "Basic TCP Server skeletal code"
+    },
+  
+    "--- BENCHMARK ---": {
+      "prefix": "bench",
+      "body": [
+        "let timer = time.timer()",
+        "$0",
+        "print(\"Elapsed time: {time.elapsed_ms(timer)}ms\")"
+      ],
+      "description": "Measure execution time of a block"
+    },
+  
+    "Unicode Ordinal": {
+      "prefix": "ord",
+      "body": "convert.ord(${1:char})",
+      "description": "Get Unicode code point of character"
+    },
+  
+    "Unicode Character": {
+      "prefix": "chr",
+      "body": "convert.chr(${1:code_point})",
+      "description": "Get character from Unicode code point"
     }
   }
