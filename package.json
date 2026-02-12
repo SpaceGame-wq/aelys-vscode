@@ -3,28 +3,92 @@
     "displayName": "Aelys Programming Language",
     "description": "Full syntax highlighting and support for the Aelys language",
     "version": "0.1.0",
-    "publisher": "AlexisGr", 
+    "publisher": "AlexisGr",
     "engines": {
-        "vscode": "^1.70.0"
+        "vscode": "^1.109.0"
     },
+    "main": "./out/extension.js",
     "icon": "icon.png",
     "repository": {
         "type": "git",
-        "url": "https://github.com/ton-pseudo/aelys-vscode"
+        "url": "https://github.com/vbxq/aelys-vscode"
     },
-    "license": "MIT",
-    "categories": ["Programming Languages"],
+    "license": "BSD-3-Clause",
+    "categories": [
+        "Programming Languages"
+    ],
+    "activationEvents": [],
     "contributes": {
-        "languages": [{
-            "id": "aelys",
-            "aliases": ["Aelys", "aelys"],
-            "extensions": [".aelys", ".ae"],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "aelys",
-            "scopeName": "source.aelys",
-            "path": "./syntaxes/aelys.tmLanguage.json"
-        }]
+        "languages": [
+            {
+                "id": "aelys",
+                "aliases": [
+                    "Aelys",
+                    "aelys"
+                ],
+                "extensions": [
+                    ".aelys",
+                    ".ae"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "aelys",
+                "scopeName": "source.aelys",
+                "path": "./syntaxes/aelys.tmLanguage.json"
+            }
+        ],
+        "snippets": [
+            {
+                "language": "aelys",
+                "path": "./snippets/snippets.json"
+            }
+        ],
+        "commands": [
+            {
+                "command": "aelys.run",
+                "title": "Aelys: Run current file",
+                "icon": "$(play)"
+            },
+            {
+                "command": "aelys.update",
+                "title": "Aelys: Check for Compiler Updates",
+                "icon": "$(refresh)"
+            }
+        ],
+        "menus": {
+            "editor/title": [
+                {
+                    "command": "aelys.run",
+                    "when": "resourceExtname == .aelys",
+                    "group": "navigation"
+                }
+            ]
+        },
+        "configuration": {
+            "title": "Aelys",
+            "properties": {
+                "aelys.autoUpdate": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Automatically check for compiler updates on startup."
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./"
+    },
+    "dependencies": {
+        "axios": "^1.13.5"
+    },
+    "devDependencies": {
+        "@types/node": "^25.2.3",
+        "@types/vscode": "^1.109.0",
+        "typescript": "^5.9.3"
     }
 }
