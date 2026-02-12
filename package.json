@@ -1,0 +1,25 @@
+{
+    "name": "aelys-support",
+    "displayName": "Aelys Language Support",
+    "description": "Syntax highlighting for the Aelys programming language",
+    "version": "0.1.0",
+    "engines": {
+        "vscode": "^1.70.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "aelys",
+            "aliases": ["Aelys", "aelys"],
+            "extensions": [".aelys", ".ae"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "aelys",
+            "scopeName": "source.aelys",
+            "path": "./syntaxes/aelys.tmLanguage.json"
+        }]
+    }
+}
