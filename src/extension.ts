@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
 import { chmodSync } from 'fs';
+import { HOVER_DOCS } from './hoverDocs'; // Importe la doc
 
 // Configuration
 const REPO_OWNER = "vbxq";
@@ -47,6 +48,29 @@ export async function activate(context: vscode.ExtensionContext) {
         await downloadLatestRelease(context);
     });
 
+    // --- HOVER PROVIDER ---
+    let hoverProvider = vscode.languages.registerHoverProvider('aelys', {
+        provideHover(document, position, token) {
+            // Récupérer le mot sous la souris
+            const range = document.getWordRangeAtPosition(position);
+            if (!range) return undefined;
+            const word = document.getText(range);
+            
+            // On vérifie si c'est un attribut (commence par @)
+            const line = document.lineAt(position.line).text;
+            const isAttr = line.charAt(range.start.character - 1) === '@';
+            const lookupKey = isAttr ? '@' + word : word;
+        
+            // Chercher dans notre dictionnaire de doc
+            const documentation = HOVER_DOCS[lookupKey];
+            if (documentation) {
+                return new vscode.Hover(new vscode.MarkdownString(documentation));
+            }
+        }
+    });
+
+    // Ajout des abonnements
+    context.subscriptions.push(hoverProvider);
     context.subscriptions.push(runCommand, updateCommand);
 
     // Vérification silencieuse au démarrage
