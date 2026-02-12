@@ -2,8 +2,8 @@
     "name": "aelys-lang",
     "displayName": "Aelys Programming Language",
     "description": "Full syntax highlighting and support for the Aelys language",
-    "version": "0.1.0",
-    "publisher": "AlexisGr",
+    "version": "0.1.2",
+    "publisher": "SpaceGame",
     "engines": {
         "vscode": "^1.109.0"
     },
@@ -11,7 +11,7 @@
     "icon": "icon.png",
     "repository": {
         "type": "git",
-        "url": "https://github.com/vbxq/aelys-vscode"
+        "url": "https://github.com/SpaceGame-wq/aelys-vscode"
     },
     "license": "BSD-3-Clause",
     "categories": [

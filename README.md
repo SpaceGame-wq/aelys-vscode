@@ -1,6 +1,6 @@
 # Aelys Language Support
 
-[![Version](https://img.shields.io/visual-studio-marketplace/v/vbxq.aelys-lang?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=AlexisGr.aelys-lang)
+[![Version](https://img.shields.io/visual-studio-marketplace/v/vbxq.aelys-lang?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=SpaceGame.aelys-lang)
 [![License](https://img.shields.io/github/license/vbxq/aelys_lang?style=flat-square)](https://github.com/vbxq/aelys_lang/blob/main/LICENSE)
 
 **Aelys** est un langage de script moderne, performant et conscient du système, conçu pour offrir la simplicité du Python avec le contrôle du Rust. Cette extension apporte un support complet de la coloration syntaxique pour VS Code.
