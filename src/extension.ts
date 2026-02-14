@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { smartUpdateCheck } from './compiler/manager';
-import { registerRunCommand } from './commands/runCommand';
+import { registerRunCommand, registerRunWithArgsCommand } from './commands/runCommand';
 import { registerUpdateCommand } from './commands/updateCommand';
 import { registerHoverProvider } from './features/hoverProvider';
 
@@ -28,7 +28,8 @@ export function activate(context: vscode.ExtensionContext) {
         refreshStatusCommand,
         registerRunCommand(context),
         registerUpdateCommand(context),
-        registerHoverProvider()
+        registerHoverProvider(),
+        registerRunWithArgsCommand(context),
     );
 
     // LOGIQUE DE DÉMARRAGE

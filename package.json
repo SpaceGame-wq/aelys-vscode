@@ -53,15 +53,25 @@
                 "icon": "$(play)"
             },
             {
+                "command": "aelys.runWithArgs",
+                "title": "Aelys: Run with Arguments...",
+                "icon": "$(settings-gear)"
+            },
+            {
                 "command": "aelys.update",
                 "title": "Aelys: Check for Compiler Updates",
                 "icon": "$(refresh)"
             }
         ],
         "menus": {
-            "editor/title": [
+            "editor/title/run": [
                 {
                     "command": "aelys.run",
+                    "when": "resourceExtname == .aelys",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aelys.runWithArgs",
                     "when": "resourceExtname == .aelys",
                     "group": "navigation"
                 }
@@ -84,6 +94,11 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Check for updates on startup."
+                },
+                "aelys.execution.defaultArguments": {
+                    "type": "string",
+                    "default": "--ae-trusted=true",
+                    "description": "Default arguments passed to the Aelys compiler when running a file."
                 }
             }
         }
