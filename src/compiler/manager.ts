@@ -59,20 +59,36 @@ export async function installCompilerVersion(context: vscode.ExtensionContext, v
         cancellable: false
     }, async (progress) => {
         try {
-            // 1. Récupérer les infos de la release
-            const url = versionTag === 'latest' ? LATEST_RELEASE_URL : `${ALL_RELEASES_URL}/tags/${versionTag}`;
-            const response = await axios.get(url);
-            const releaseData = response.data;
+            let releaseData;
+
+            // Sécurité pour le tag 'latest'
+            if (versionTag === 'latest') {
+                try {
+                    const response = await axios.get(LATEST_RELEASE_URL);
+                    releaseData = response.data;
+                } catch (e) {
+                    // Si GitHub renvoie 404 sur 'latest', on prend la première release de la liste
+                    const allReleases = await fetchAllVersions();
+                    if (allReleases.length === 0) throw new Error("No releases found on GitHub.");
+                    releaseData = allReleases[0];
+                }
+            } else {
+                // Construction de l'URL avec le tag pur (sans icônes)
+                const url = `${ALL_RELEASES_URL.split('?')[0]}/tags/${versionTag}`;
+                const response = await axios.get(url);
+                releaseData = response.data;
+            }
+
             const actualTag = releaseData.tag_name;
             
             const asset = releaseData.assets.find((a: any) => a.name === assetName);
             if (!asset) throw new Error(`Binary ${assetName} not found for version ${actualTag}.`);
 
-            // 2. Téléchargement
+            // Téléchargement
             progress.report({ message: `Downloading ${actualTag}...` });
             const downloadResponse = await axios.get(asset.browser_download_url, { responseType: 'arraybuffer' });
 
-            // 3. Sauvegarde locale
+            // Sauvegarde locale
             if (!fs.existsSync(context.globalStorageUri.fsPath)) {
                 fs.mkdirSync(context.globalStorageUri.fsPath, { recursive: true });
             }
@@ -85,7 +101,7 @@ export async function installCompilerVersion(context: vscode.ExtensionContext, v
                 fs.chmodSync(binPath, 0o755);
             }
 
-            // 4. Mise à jour de l'état
+            // Mise à jour de l'état
             context.globalState.update('installedVersion', actualTag);
             // On réinitialise l'ignorance car l'utilisateur vient de faire une action volontaire
             context.globalState.update('ignoredVersion', undefined);

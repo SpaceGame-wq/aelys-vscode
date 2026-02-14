@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
 import { installCompilerVersion, fetchAllVersions } from '../compiler/manager';
 
+interface ReleasePickItem extends vscode.QuickPickItem {
+    tag: string;
+}
+
 export function registerUpdateCommand(context: vscode.ExtensionContext): vscode.Disposable {
     return vscode.commands.registerCommand('aelys.update', async () => {
         
@@ -19,12 +23,12 @@ export function registerUpdateCommand(context: vscode.ExtensionContext): vscode.
         }
 
         // Préparer les éléments pour la liste déroulante (QuickPick)
-        const items: vscode.QuickPickItem[] = releases.map((release, index) => {
+        const items: ReleasePickItem[] = releases.map((release, index) => {
             const date = new Date(release.published_at).toLocaleDateString();
             const tagName = release.tag_name;
             const lowerTag = tagName.toLowerCase();
             
-            // --- LOGIQUE DE DÉTECTION AMÉLIORÉE ---
+            // LOGIQUE DE DÉTECTION
             let typeLabel = "Stable";
             let icon = "$(verified)"; // Bouclier par défaut
 
@@ -54,12 +58,13 @@ export function registerUpdateCommand(context: vscode.ExtensionContext): vscode.
             return {
                 label: `${labelIcon} ${tagName}`,
                 description: typeLabel, // Aichera "Alpha", "Beta" ou "Stable"
-                detail: `Published: ${date} — ${release.name || ''}`
+                detail: `Published: ${date} — ${release.name || ''}`,
+                tag: tagName
             };
         });
 
         // Afficher la liste déroulante
-        const selected = await vscode.window.showQuickPick(items, {
+        const selected = await vscode.window.showQuickPick<ReleasePickItem>(items, {
             placeHolder: "Select the Aelys compiler version to install",
             title: "Manage Aelys Compiler Version",
             matchOnDescription: true,
@@ -68,10 +73,7 @@ export function registerUpdateCommand(context: vscode.ExtensionContext): vscode.
 
         // Si l'utilisateur a choisi une version
         if (selected) {
-            // On nettoie le label pour enlever l'icône étoile "$(star) " si elle est présente
-            const cleanTag = selected.label.replace('$(star) ', '');
-            
-            await installCompilerVersion(context, cleanTag);
+            await installCompilerVersion(context, selected.tag);
             
             // On demande à l'extension de rafraîchir la barre de statut
             vscode.commands.executeCommand('aelys.refreshStatus');
