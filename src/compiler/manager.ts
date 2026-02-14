@@ -3,14 +3,14 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
-import { GITHUB_API_URL } from '../core/constants';
+import { ALL_RELEASES_URL, LATEST_RELEASE_URL } from '../core/constants';
 
 /**
- * Determines the correct binary asset name based on the host OS and architecture.
+ * Détermine le nom de l'asset binaire en fonction de l'OS et de l'architecture.
  */
 function getTargetAsset(): string {
-    const platform = os.platform(); // 'win32', 'darwin', 'linux'
-    const arch = os.arch();         // 'x64', 'arm64'
+    const platform = os.platform();
+    const arch = os.arch();
 
     if (platform === 'win32') return "aelys-x86_64-pc-windows-msvc.exe";
     if (platform === 'darwin') {
@@ -22,7 +22,7 @@ function getTargetAsset(): string {
 }
 
 /**
- * Returns the full local path where the Aelys binary should be stored.
+ * Retourne le chemin local où le binaire Aelys est stocké.
  */
 export function getBinaryPath(context: vscode.ExtensionContext): string {
     const filename = os.platform() === 'win32' ? 'aelys.exe' : 'aelys';
@@ -30,9 +30,23 @@ export function getBinaryPath(context: vscode.ExtensionContext): string {
 }
 
 /**
- * Downloads the latest release of the Aelys compiler from GitHub.
+ * Récupère toutes les versions disponibles sur le dépôt GitHub.
  */
-export async function downloadLatestRelease(context: vscode.ExtensionContext) {
+export async function fetchAllVersions(): Promise<any[]> {
+    try {
+        const response = await axios.get(ALL_RELEASES_URL);
+        return response.data;
+    } catch (e) {
+        console.error("Aelys: Failed to fetch releases", e);
+        return [];
+    }
+}
+
+/**
+ * Télécharge et installe une version spécifique du compilateur.
+ * @param versionTag Le tag de la version (ex: 'v0.1.2') ou 'latest'.
+ */
+export async function installCompilerVersion(context: vscode.ExtensionContext, versionTag: string = 'latest') {
     const assetName = getTargetAsset();
     if (!assetName) {
         vscode.window.showErrorMessage("Your OS or Architecture is not supported by Aelys yet.");
@@ -41,20 +55,24 @@ export async function downloadLatestRelease(context: vscode.ExtensionContext) {
 
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
-        title: "Aelys: Fetching latest release...",
+        title: `Aelys: Installing ${versionTag}...`,
         cancellable: false
     }, async (progress) => {
         try {
-            const response = await axios.get(GITHUB_API_URL);
-            const latestVersion = response.data.tag_name;
-            const asset = response.data.assets.find((a: any) => a.name === assetName);
+            // 1. Récupérer les infos de la release
+            const url = versionTag === 'latest' ? LATEST_RELEASE_URL : `${ALL_RELEASES_URL}/tags/${versionTag}`;
+            const response = await axios.get(url);
+            const releaseData = response.data;
+            const actualTag = releaseData.tag_name;
+            
+            const asset = releaseData.assets.find((a: any) => a.name === assetName);
+            if (!asset) throw new Error(`Binary ${assetName} not found for version ${actualTag}.`);
 
-            if (!asset) throw new Error(`Binary ${assetName} not found in release.`);
-
-            progress.report({ message: `Downloading version ${latestVersion}...` });
-
+            // 2. Téléchargement
+            progress.report({ message: `Downloading ${actualTag}...` });
             const downloadResponse = await axios.get(asset.browser_download_url, { responseType: 'arraybuffer' });
 
+            // 3. Sauvegarde locale
             if (!fs.existsSync(context.globalStorageUri.fsPath)) {
                 fs.mkdirSync(context.globalStorageUri.fsPath, { recursive: true });
             }
@@ -62,12 +80,21 @@ export async function downloadLatestRelease(context: vscode.ExtensionContext) {
             const binPath = getBinaryPath(context);
             fs.writeFileSync(binPath, Buffer.from(downloadResponse.data));
 
+            // Droits d'exécution pour Linux/Mac
             if (os.platform() !== 'win32') {
                 fs.chmodSync(binPath, 0o755);
             }
 
-            context.globalState.update('installedVersion', latestVersion);
-            vscode.window.showInformationMessage(`Aelys ${latestVersion} installed successfully!`);
+            // 4. Mise à jour de l'état
+            context.globalState.update('installedVersion', actualTag);
+            // On réinitialise l'ignorance car l'utilisateur vient de faire une action volontaire
+            context.globalState.update('ignoredVersion', undefined);
+            
+            vscode.window.showInformationMessage(`Aelys ${actualTag} installed successfully!`);
+            
+            // Émettre un événement personnalisé ou rafraîchir la barre de statut si nécessaire
+            vscode.commands.executeCommand('aelys.refreshStatus');
+
         } catch (error: any) {
             vscode.window.showErrorMessage(`Failed to install Aelys: ${error.message}`);
         }
@@ -75,27 +102,50 @@ export async function downloadLatestRelease(context: vscode.ExtensionContext) {
 }
 
 /**
- * Checks for compiler updates on extension startup.
+ * Vérification intelligente au démarrage de l'extension.
  */
-export async function initialCheck(context: vscode.ExtensionContext) {
+export async function smartUpdateCheck(context: vscode.ExtensionContext) {
     const binPath = getBinaryPath(context);
-    const installedVersion = context.globalState.get('installedVersion');
+    const installedVersion = context.globalState.get<string>('installedVersion');
+    const ignoredVersion = context.globalState.get<string>('ignoredVersion');
 
+    // 1. Si le binaire est absent, on force l'installation
     if (!fs.existsSync(binPath)) {
-        const choice = await vscode.window.showInformationMessage("Aelys executable is missing. Download it to run scripts?", "Install");
-        if (choice === "Install") await downloadLatestRelease(context);
+        const choice = await vscode.window.showInformationMessage(
+            "Aelys executable is missing. Download it to run scripts?", 
+            "Install Latest"
+        );
+        if (choice === "Install Latest") await installCompilerVersion(context, 'latest');
         return;
     }
 
+    // 2. Vérifier les mises à jour sur GitHub
     try {
-        const response = await axios.get(GITHUB_API_URL);
+        const response = await axios.get(LATEST_RELEASE_URL);
         const latestVersion = response.data.tag_name;
 
+        // Si une version plus récente existe
         if (installedVersion !== latestVersion) {
-            const update = await vscode.window.showInformationMessage(`A new version of Aelys is available (${latestVersion}).`, "Update Now", "Later");
-            if (update === "Update Now") await downloadLatestRelease(context);
+            
+            // Si l'utilisateur a déjà cliqué sur "Later" pour CETTE version précise, on ne l'embête pas
+            if (ignoredVersion === latestVersion) {
+                return;
+            }
+
+            const updateChoice = await vscode.window.showInformationMessage(
+                `A new version of Aelys is available (${latestVersion}).`,
+                "Update Now", 
+                "Later"
+            );
+
+            if (updateChoice === "Update Now") {
+                await installCompilerVersion(context, latestVersion);
+            } else if (updateChoice === "Later") {
+                // On mémorise que cette version spécifique est ignorée
+                context.globalState.update('ignoredVersion', latestVersion);
+            }
         }
     } catch (e) {
-        // Fail silently if there's no internet connection.
+        // Erreur silencieuse (ex: pas d'internet)
     }
 }

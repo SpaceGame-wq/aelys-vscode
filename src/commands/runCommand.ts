@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as fs from 'fs';
-import { getBinaryPath, downloadLatestRelease } from '../compiler/manager';
+import { getBinaryPath, installCompilerVersion } from '../compiler/manager'; // Correction de l'import
 import { getAelysTerminal } from '../core/terminal';
 
 export function registerRunCommand(context: vscode.ExtensionContext): vscode.Disposable {
@@ -13,9 +13,14 @@ export function registerRunCommand(context: vscode.ExtensionContext): vscode.Dis
         }
 
         const binPath = getBinaryPath(context);
+        
+        // Si le binaire n'existe pas, on propose de l'installer
         if (!fs.existsSync(binPath)) {
             const setup = await vscode.window.showWarningMessage("Aelys executable not found.", "Install Now");
-            if (setup === "Install Now") await downloadLatestRelease(context);
+            if (setup === "Install Now") {
+                // On installe la dernière version par défaut
+                await installCompilerVersion(context, 'latest');
+            }
             return;
         }
 

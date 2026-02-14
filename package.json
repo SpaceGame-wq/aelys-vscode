@@ -74,6 +74,16 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Automatically check for compiler updates on startup."
+                },
+                "aelys.compiler.version": {
+                    "type": "string",
+                    "default": "latest",
+                    "description": "Specify a version of the Aelys compiler (e.g., 'v0.1.2') or 'latest'."
+                },
+                "aelys.compiler.autoCheck": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Check for updates on startup."
                 }
             }
         }
