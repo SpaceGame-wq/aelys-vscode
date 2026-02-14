@@ -46,13 +46,23 @@ export function activate(context: vscode.ExtensionContext) {
  * @param context Le contexte de l'extension pour accéder au stockage global.
  */
 function updateStatusBar(context: vscode.ExtensionContext) {
+    const config = vscode.workspace.getConfiguration('aelys');
+    const customPath = config.get<string>('compiler.path');
     const installedVersion = context.globalState.get<string>('installedVersion');
     
-    if (installedVersion) {
+    if (customPath && customPath.trim() !== "") {
+        // L'utilisateur utilise un binaire local personnalisé
+        statusBarItem.text = `$(tools) Aelys: Local`;
+        statusBarItem.tooltip = `Using local path: ${customPath}\nClick to change version`;
+        statusBarItem.backgroundColor = undefined;
+    } 
+    else if (installedVersion) {
+        // L'utilisateur utilise une version téléchargée
         statusBarItem.text = `$(chip) Aelys ${installedVersion}`;
         statusBarItem.tooltip = "Aelys Compiler: Click to change version";
-        statusBarItem.backgroundColor = undefined; // Couleur par défaut
+        statusBarItem.backgroundColor = undefined;
     } else {
+        // Rien n'est installé
         statusBarItem.text = `$(alert) Aelys: Install Required`;
         statusBarItem.tooltip = "Click to install the Aelys compiler";
         statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');

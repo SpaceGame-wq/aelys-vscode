@@ -2,7 +2,7 @@
     "name": "aelys-lang",
     "displayName": "Aelys Programming Language",
     "description": "Full syntax highlighting and support for the Aelys language",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "publisher": "SpaceGame",
     "engines": {
         "vscode": "^1.75.0"
@@ -99,6 +99,11 @@
                     "type": "string",
                     "default": "--ae-trusted=true",
                     "description": "Default arguments passed to the Aelys compiler when running a file."
+                },
+                "aelys.compiler.path": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Absolute path to a local Aelys executable. If set, this will be used instead of the downloaded version."
                 }
             }
         }

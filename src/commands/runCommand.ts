@@ -20,11 +20,18 @@ async function runAelysScript(context: vscode.ExtensionContext, specificArgs?: s
         
     // Si le binaire n'existe pas, on propose de l'installer
     if (!fs.existsSync(binPath)) {
-        const setup = await vscode.window.showWarningMessage("Aelys executable not found.", "Install Now");
+        const config = vscode.workspace.getConfiguration('aelys');
+        const customPath = config.get<string>('compiler.path');
+    
+        if (customPath) {
+            vscode.window.showErrorMessage(`The local Aelys path does not exist: ${customPath}`);
+        } else {
+            const setup = await vscode.window.showWarningMessage("Aelys executable not found.", "Install Now");
             if (setup === "Install Now") {
                 // On installe la dernière version par défaut
                 await installCompilerVersion(context, 'latest');
             }
+        }
         return;
     }
 

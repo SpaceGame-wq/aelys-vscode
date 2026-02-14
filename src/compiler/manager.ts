@@ -22,9 +22,18 @@ function getTargetAsset(): string {
 }
 
 /**
- * Retourne le chemin local où le binaire Aelys est stocké.
+ * Retourne le chemin du binaire Aelys (Local ou Téléchargé).
  */
 export function getBinaryPath(context: vscode.ExtensionContext): string {
+    // Vérifier si un chemin local est défini dans les réglages
+    const config = vscode.workspace.getConfiguration('aelys');
+    const customPath = config.get<string>('compiler.path');
+
+    if (customPath && customPath.trim() !== "") {
+        return customPath.trim();
+    }
+
+    // Sinon, utiliser le chemin par défaut du stockage global
     const filename = os.platform() === 'win32' ? 'aelys.exe' : 'aelys';
     return path.join(context.globalStorageUri.fsPath, filename);
 }
@@ -118,9 +127,17 @@ export async function installCompilerVersion(context: vscode.ExtensionContext, v
 }
 
 /**
- * Vérification intelligente au démarrage de l'extension.
+ * Vérification intelligente au démarrage de l'extension (modifiée pour ignorer si chemin local)
  */
 export async function smartUpdateCheck(context: vscode.ExtensionContext) {
+    const config = vscode.workspace.getConfiguration('aelys');
+    
+    // Si un chemin local est défini, on ne vérifie pas les mises à jour GitHub
+    const customPath = config.get<string>('compiler.path');
+    if (customPath && customPath.trim() !== "") {
+        return; 
+    }
+
     const binPath = getBinaryPath(context);
     const installedVersion = context.globalState.get<string>('installedVersion');
     const ignoredVersion = context.globalState.get<string>('ignoredVersion');
