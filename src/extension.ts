@@ -3,6 +3,7 @@ import { smartUpdateCheck } from './compiler/manager';
 import { registerRunCommand, registerRunWithArgsCommand } from './commands/runCommand';
 import { registerUpdateCommand } from './commands/updateCommand';
 import { registerHoverProvider } from './features/hoverProvider';
+import { registerAsmCommand, registerAsmWithArgsCommand } from './commands/asmCommand';
 
 let statusBarItem: vscode.StatusBarItem;
 
@@ -30,6 +31,8 @@ export function activate(context: vscode.ExtensionContext) {
         registerUpdateCommand(context),
         registerHoverProvider(),
         registerRunWithArgsCommand(context),
+        registerAsmCommand(context),
+        registerAsmWithArgsCommand(context)
     );
 
     // LOGIQUE DE DÉMARRAGE

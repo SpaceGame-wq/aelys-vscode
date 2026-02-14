@@ -61,6 +61,16 @@
                 "command": "aelys.update",
                 "title": "Aelys: Check for Compiler Updates",
                 "icon": "$(refresh)"
+            },
+            {
+                "command": "aelys.inspectBytecode",
+                "title": "Aelys: Inspect Bytecode (Asm)",
+                "icon": "$(search-visual)" 
+            },
+            {
+                "command": "aelys.inspectBytecodeWithArgs",
+                "title": "Aelys: Inspect Bytecode with Args...",
+                "icon": "$(settings-gear)"
             }
         ],
         "menus": {
@@ -74,6 +84,16 @@
                     "command": "aelys.runWithArgs",
                     "when": "resourceExtname == .aelys",
                     "group": "navigation"
+                },
+                {
+                    "command": "aelys.inspectBytecode",
+                    "when": "resourceExtname == .aelys || resourceExtname == .ae",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "aelys.inspectBytecodeWithArgs",
+                    "when": "resourceExtname == .aelys || resourceExtname == .ae",
+                    "group": "navigation@2"
                 }
             ]
         },
@@ -104,6 +124,11 @@
                     "type": "string",
                     "default": "",
                     "description": "Absolute path to a local Aelys executable. If set, this will be used instead of the downloaded version."
+                },
+                "aelys.asm.defaultArguments": {
+                    "type": "string",
+                    "default": "-O0 --ae-trusted=true",
+                    "description": "Default arguments for the Bytecode Inspector (e.g., -O2, -O3)."
                 }
             }
         }
