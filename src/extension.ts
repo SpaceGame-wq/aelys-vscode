@@ -4,6 +4,7 @@ import { registerRunCommand, registerRunWithArgsCommand } from './commands/runCo
 import { registerUpdateCommand } from './commands/updateCommand';
 import { registerHoverProvider } from './features/hoverProvider';
 import { registerAsmCommand, registerAsmWithArgsCommand } from './commands/asmCommand';
+import { registerReplCommands } from './commands/replCommand';
 
 let statusBarItem: vscode.StatusBarItem;
 
@@ -22,6 +23,11 @@ export function activate(context: vscode.ExtensionContext) {
     // Commande pour changer la version du compilateur
     const refreshStatusCommand = vscode.commands.registerCommand('aelys.refreshStatus', () => {
         updateStatusBar(context);
+    });
+
+    // On parcourt le tableau renvoyé et on ajoute chaque commande au contexte
+    registerReplCommands(context).forEach(command => {
+        context.subscriptions.push(command);
     });
 
     // On ajoute toutes les commandes et fonctionnalités au contexte pour qu'elles soient bien libérées

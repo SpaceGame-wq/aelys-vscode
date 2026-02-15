@@ -2,7 +2,7 @@
     "name": "aelys-lang",
     "displayName": "Aelys Programming Language",
     "description": "Full syntax highlighting and support for the Aelys language",
-    "version": "0.1.4",
+    "version": "0.2.0",
     "publisher": "SpaceGame",
     "engines": {
         "vscode": "^1.75.0"
@@ -71,9 +71,33 @@
                 "command": "aelys.inspectBytecodeWithArgs",
                 "title": "Aelys: Inspect Bytecode with Args...",
                 "icon": "$(settings-gear)"
+            },
+            {
+                "command": "aelys.openRepl",
+                "title": "Aelys: Open Interactive REPL",
+                "icon": "$(terminal)"
+            },
+            {
+                "command": "aelys.sendToRepl",
+                "title": "Aelys: Send Selection to REPL",
+                "icon": "$(chevron-right)"
             }
         ],
         "menus": {
+            "editor/context": [
+                {
+                    "command": "aelys.sendToRepl",
+                    "when": "editorHasSelection && resourceExtname == .aelys || resourceExtname == .ae",
+                    "group": "navigation"
+                }
+            ],
+            "editor/title": [
+                {
+                    "command": "aelys.openRepl",
+                    "when": "resourceExtname == .aelys || resourceExtname == .ae",
+                    "group": "navigation@3"
+                }
+            ],
             "editor/title/run": [
                 {
                     "command": "aelys.run",
