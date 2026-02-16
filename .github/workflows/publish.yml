@@ -1,0 +1,83 @@
+name: Publish Extension
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  check-version-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if version changed
+        id: version-check
+        run: |
+          # Get current version from package.json
+          CURRENT_VERSION=$(jq -r '.version' package.json)
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Get previous version from last commit
+          git show HEAD~1:package.json > /tmp/old_package.json 2>/dev/null || echo '{"version":"0.0.0"}' > /tmp/old_package.json
+          PREVIOUS_VERSION=$(jq -r '.version' /tmp/old_package.json)
+          echo "Previous version: $PREVIOUS_VERSION"
+          
+          # Compare versions
+          if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
+            echo "Version changed from $PREVIOUS_VERSION to $CURRENT_VERSION"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "Version unchanged"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node.js
+        if: steps.version-check.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: steps.version-check.outputs.changed == 'true'
+        run: npm ci
+
+      - name: Compile TypeScript
+        if: steps.version-check.outputs.changed == 'true'
+        run: npm run compile
+
+      - name: Install VSCE
+        if: steps.version-check.outputs.changed == 'true'
+        run: npm install -g @vscode/vsce
+
+      - name: Publish to VS Code Marketplace
+        if: steps.version-check.outputs.changed == 'true'
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          echo "Publishing version ${{ steps.version-check.outputs.version }} to VS Code Marketplace..."
+          vsce publish -p "$VSCE_PAT"
+
+      - name: Install OVSX
+        if: steps.version-check.outputs.changed == 'true'
+        run: npm install -g ovsx
+
+      - name: Publish to Open VSX (VSCodium)
+        if: steps.version-check.outputs.changed == 'true'
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          echo "Publishing version ${{ steps.version-check.outputs.version }} to Open VSX..."
+          ovsx publish -p "$OVSX_PAT"
+
+      - name: Create Git Tag
+        if: steps.version-check.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ steps.version-check.outputs.version }}" -m "Release v${{ steps.version-check.outputs.version }}"
+          git push origin "v${{ steps.version-check.outputs.version }}"
