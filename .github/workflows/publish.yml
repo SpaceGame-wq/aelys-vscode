@@ -44,7 +44,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.version-check.outputs.changed == 'true'
-        run: npm ci
+        run: npm install
 
       - name: Compile TypeScript
         if: steps.version-check.outputs.changed == 'true'
