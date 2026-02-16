@@ -105,7 +105,7 @@
             "patterns": [
                 {
                     "name": "storage.type.primitive.aelys",
-                    "match": "\\b(int|float|string|bool|null)\\b"
+                    "match": "\\b(int|float|string|bool|null|array|vec)\\b"
                 },
                 {
                     "match": "\\b(Array|Vec)\\b",
@@ -114,6 +114,12 @@
                 {
                     "match": "(<|\\|>)",
                     "name": "punctuation.bracket.angle.aelys"
+                },
+                {
+                    "match": "(?<=:)\\s*([a-zA-Z_][a-zA-Z0-9_]*)",
+                    "captures": {
+                        "1": { "name": "storage.type.primitive.aelys" }
+                    }
                 }
             ]
         },
@@ -181,6 +187,7 @@
         },
         "punctuation": {
             "patterns": [
+                { "match": ":", "name": "keyword.operator.type.aelys" },
                 { "match": "\\.", "name": "punctuation.accessor.aelys" },
                 { "match": ",", "name": "punctuation.separator.aelys" },
                 { "match": ";", "name": "punctuation.terminator.aelys" },
