@@ -5,6 +5,7 @@ import { registerUpdateCommand } from './commands/updateCommand';
 import { registerHoverProvider } from './features/hoverProvider';
 import { registerAsmCommand, registerAsmWithArgsCommand } from './commands/asmCommand';
 import { registerReplCommands } from './commands/replCommand';
+import { registerSignatureProvider } from './features/signatureProvider';
 
 let statusBarItem: vscode.StatusBarItem;
 
@@ -36,6 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
         registerRunCommand(context),
         registerUpdateCommand(context),
         registerHoverProvider(),
+        registerSignatureProvider(),
         registerRunWithArgsCommand(context),
         registerAsmCommand(context),
         registerAsmWithArgsCommand(context)

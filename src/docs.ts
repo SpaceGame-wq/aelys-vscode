@@ -77,3 +77,38 @@ export const HOVER_DOCS: { [key: string]: string } = {
     "platform": "```rust\nsys.platform() -> string\n```\nReturns OS name (\"linux\", \"macos\", \"windows\").",
     "arch": "```rust\nsys.arch() -> string\n```\nReturns CPU architecture (\"x86_64\", \"aarch64\")."
 };
+
+// Documentation pour l'aide au paramètres(Signature Help)
+export interface AelysSignature {
+    label: string;
+    parameters: { label: string; documentation: string }[];
+    documentation: string;
+}
+
+export const SIGNATURES: { [key: string]: AelysSignature } = {
+    "math.clamp": {
+        label: "math.clamp(x, min, max)",
+        parameters: [
+            { label: "x", documentation: "La valeur à limiter." },
+            { label: "min", documentation: "La limite inférieure." },
+            { label: "max", documentation: "La limite supérieure." }
+        ],
+        documentation: "Retourne x restreint entre min et max."
+    },
+    "math.pow": {
+        label: "math.pow(base, exp)",
+        parameters: [
+            { label: "base", documentation: "Le nombre de base." },
+            { label: "exp", documentation: "L'exposant." }
+        ],
+        documentation: "Retourne base élevé à la puissance exp."
+    },
+    "io.print": {
+        label: "io.print(value)",
+        parameters: [
+            { label: "value", documentation: "La valeur à afficher dans la console." }
+        ],
+        documentation: "Affiche la valeur suivie d'un saut de ligne."
+    }
+    // Plus tard il faudra ajouter énormément de fonction ici pour avoir une bonne auto complétion
+};

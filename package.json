@@ -2,7 +2,7 @@
     "name": "aelys-lang",
     "displayName": "Aelys Programming Language",
     "description": "Full syntax highlighting and support for the Aelys language",
-    "version": "0.2.1",
+    "version": "0.3.0",
     "publisher": "SpaceGame",
     "engines": {
         "vscode": "^1.75.0"
