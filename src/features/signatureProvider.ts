@@ -1,13 +1,23 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
 import { SIGNATURES, AelysSignature } from '../docs';
+
+/**
+ * Interface pour représenter un import détecté
+ */
+interface AelysImport {
+    moduleName: string;   // ex: "std.io" ou "utils"
+    alias: string | null; // ex: "net" dans "as net"
+    isStd: boolean;      // true si commence par "std."
+}
 
 /**
  * Scanne le document pour trouver les fonctions définies par l'utilisateur
  * et extrait les commentaires placés juste au-dessus.
  */
-function parseUserSignatures(document: vscode.TextDocument): { [key: string]: AelysSignature } {
-    const text = document.getText();
-    const userSignatures: { [key: string]: AelysSignature } = {};
+function parseSignaturesFromText(text: string, prefix: string = ""): { [key: string]: AelysSignature } {
+    const signatures: { [key: string]: AelysSignature } = {};
 
     // Regex
     // ((\/\/.*(?:\r?\n\s*\/\/.*)*)\s*)?     Groupe 2 = capture plusieurs lignes de commentaires commençant par //
@@ -17,37 +27,100 @@ function parseUserSignatures(document: vscode.TextDocument): { [key: string]: Ae
 
     let match;
     while ((match = fnRegex.exec(text)) !== null) {
-        const fullComment = match[1] ? match[1].replace(/\/\//g, '').trim() : "Fonction définie par l'utilisateur.";
+        const comment = match[1] ? match[1].replace(/\/\//g, '').trim() : "Fonction définie dans le module.";
         const name = match[2];
         const rawParams = match[3];
+        const fullName = prefix ? `${prefix}.${name}` : name;
 
-        // Nettoyage et découpage des paramètre
-        const params = rawParams.split(',').map(p => p.trim()).filter(p => p.length > 0);
-
-        userSignatures[name] = {
-            label: `${name}(${rawParams})`,
-            documentation: fullComment,
-            parameters: params.map(p => ({
+        signatures[fullName] = {
+            label: `${fullName}(${rawParams})`,
+            documentation: comment,
+            parameters: rawParams.split(',').map(p => p.trim()).filter(p => p.length > 0).map(p => ({
                 label: p,
                 documentation: ``
             }))
         };
     }
-    return userSignatures;
+    return signatures;
 }
 
 /**
- * Provider principal pour l'aide aux paramètres (Signature Help)
+ * Analyse les imports du document
  */
+function parseImports(document: vscode.TextDocument): AelysImport[] {
+    const text = document.getText();
+    const imports: AelysImport[] = [];
+    // Regex needs (std.module ou module) (as alias)?
+    const importRegex = /\bneeds\s+([a-zA-Z_.]+)(?:\s+as\s+([a-zA-Z_]+))?/g;
+
+    let match;
+    while ((match = importRegex.exec(text)) !== null) {
+        const moduleName = match[1];
+        imports.push({
+            moduleName: moduleName,
+            alias: match[2] || null,
+            isStd: moduleName.startsWith('std.')
+        });
+    }
+    return imports;
+}
+
+/**
+ * Charge les signatures des modules importés
+ */
+async function getImportedSignatures(document: vscode.TextDocument, imports: AelysImport[]): Promise<{ [key: string]: AelysSignature }> {
+    let allImportedSigs: { [key: string]: AelysSignature } = {};
+    const currentDir = path.dirname(document.uri.fsPath);
+
+    for (const imp of imports) {
+        if (imp.isStd) {
+            // GESTION DES LIBRAIRIES STANDARDS (std.io, etc.)
+            const stdKey = imp.moduleName.replace('std.', ''); // ex: "io"
+            
+            // On cherche dans docs.ts toutes les fonctions qui commencent par "io."
+            for (const [key, sig] of Object.entries(SIGNATURES)) {
+                if (key.startsWith(stdKey + ".")) {
+                    // Si on a un alias "as net", on remplace "net.connect" au lieu de "std.net.connect"
+                    const searchPrefix = imp.alias || stdKey;
+                    const newKey = key.replace(stdKey, searchPrefix);
+                    allImportedSigs[newKey] = { ...sig, label: sig.label.replace(stdKey, searchPrefix) };
+                }
+            }
+        } else {
+            // GESTION DES FICHIERS LOCAUX (utils.aelys)
+            const fileNames = [`${imp.moduleName}.aelys`, `${imp.moduleName}.ae`];
+            for (const fName of fileNames) {
+                const fullPath = path.join(currentDir, fName);
+                if (fs.existsSync(fullPath)) {
+                    try {
+                        const content = fs.readFileSync(fullPath, 'utf8');
+                        // Si "needs utils as u", on préfixe les fonctions par "u."
+                        const sigs = parseSignaturesFromText(content, imp.alias || "");
+                        allImportedSigs = { ...allImportedSigs, ...sigs };
+                    } catch (e) { console.error(e); }
+                    break;
+                }
+            }
+        }
+    }
+    return allImportedSigs;
+}
+
 export function registerSignatureProvider(): vscode.Disposable {
     return vscode.languages.registerSignatureHelpProvider('aelys', {
-        provideSignatureHelp(document, position, token, _context) {
+        async provideSignatureHelp(document, position) {
             
-            // Analyse dynamique du document actuel pour les fonctions utilisateur
-            const userSigs = parseUserSignatures(document);
+            // Scanner les imports
+            const imports = parseImports(document);
             
-            // Fusionner avec la bibliothèque standard (std) définie dans docs.ts
-            const allSignatures = { ...SIGNATURES, ...userSigs };
+            // Charger les signatures (Standards avec alias + Fichiers locaux)
+            const importedSigs = await getImportedSignatures(document, imports);
+            
+            // Scanner les fonctions du fichier actuel
+            const localSigs = parseSignaturesFromText(document.getText());
+
+            // Fusion totale
+            const allSignatures = { ...SIGNATURES, ...importedSigs, ...localSigs };
 
             // Récupérer tout le texte avant le curseur pour analyse
             const offset = document.offsetAt(position);
@@ -73,12 +146,11 @@ export function registerSignatureProvider(): vscode.Disposable {
                         found = true;
 
                         // On cherche le nom de la fonction juste avant le '('
-                        const textBeforeParen = textUntilCursor.substring(0, i);
-                        const nameMatch = textBeforeParen.match(/([@a-zA-Z0-9_.]+)\s*$/);
-                        
-                        if (nameMatch) {
-                            functionName = nameMatch[1];
+                        const match = textUntilCursor.substring(0, i).match(/([@a-zA-Z0-9_.]+)\s*$/);
+                        if (match) {
+                            functionName = match[1];
                         }
+
                         break;
                     }
                 } 
