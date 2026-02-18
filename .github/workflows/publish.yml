@@ -77,10 +77,33 @@ jobs:
           echo "Publishing version ${{ steps.version-check.outputs.version }} to Open VSX..."
           ovsx publish -p "$OVSX_PAT"
 
-      - name: Create Git Tag
+      - name: Package Extension
         if: steps.version-check.outputs.changed == 'true'
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "v${{ steps.version-check.outputs.version }}" -m "Release v${{ steps.version-check.outputs.version }}"
-          git push origin "v${{ steps.version-check.outputs.version }}"
+          vsce package -o aelys-lang-${{ steps.version-check.outputs.version }}.vsix
+  
+      - name: Create GitHub Release with VSIX
+        if: steps.version-check.outputs.changed == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "v${{ steps.version-check.outputs.version }}"
+          name: "Aelys v${{ steps.version-check.outputs.version }}"
+          body: |
+            ## Installation manuelle
+            
+            ### VS Code
+            ```bash
+            code --install-extension aelys-lang-${{ steps.version-check.outputs.version }}.vsix
+            ```
+            
+            ### VSCodium
+            ```bash
+            codium --install-extension aelys-lang-${{ steps.version-check.outputs.version }}.vsix
+            ```
+            
+            ### Marketplaces
+            - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=SpaceGame.aelys-lang)
+            - [Open VSX Registry](https://open-vsx.org/extension/SpaceGame/aelys-lang)
+          files: aelys-lang-${{ steps.version-check.outputs.version }}.vsix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
