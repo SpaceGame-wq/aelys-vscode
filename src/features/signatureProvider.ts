@@ -35,10 +35,14 @@ function parseSignaturesFromText(text: string, prefix: string = ""): { [key: str
         signatures[fullName] = {
             label: `${fullName}(${rawParams})`,
             documentation: comment,
-            parameters: rawParams.split(',').map(p => p.trim()).filter(p => p.length > 0).map(p => ({
-                label: p,
-                documentation: ``
-            }))
+            parameters: rawParams.split(',').map(p => p.trim()).filter(p => p.length > 0).map(p => {
+                // On sépare le nom du type s'il existe (ex: "needle: string" -> "needle")
+                const paramName = p.split(':')[0].trim();
+                return {
+                    label: p, // Affiche "needle: string" dans la liste
+                    documentation: ``
+                };
+            })
         };
     }
     return signatures;
@@ -165,7 +169,19 @@ export function registerSignatureProvider(): vscode.Disposable {
                 return undefined;
             }
 
-            const sigInfo = allSignatures[functionName];
+            let sigInfo = allSignatures[functionName];
+
+            // Si non trouvé (ex: l'utilisateur a tapé 'print' au lieu de 'io.print')
+            if (!sigInfo && !functionName.includes('.')) {
+                // On cherche dans les signatures globales si une fonction finit par ce nom
+                // ex: si functionName est "print", on trouve "io.print"
+                const globalKey = Object.keys(SIGNATURES).find(k => k.split('.').pop() === functionName);
+                if (globalKey) {
+                    sigInfo = SIGNATURES[globalKey];
+                }
+            }
+
+            if (!sigInfo) return undefined;
 
             // Construction de l'objet SignatureHelp pour VS Code
             const signatureHelp = new vscode.SignatureHelp();
@@ -176,7 +192,7 @@ export function registerSignatureProvider(): vscode.Disposable {
             );
 
             signature.parameters = sigInfo.parameters.map(p => 
-                new vscode.ParameterInformation(p.label, p.documentation)
+                new vscode.ParameterInformation(p.label, p.documentation || `Parameter: ${p.label}`)
             );
 
             signatureHelp.signatures = [signature];
