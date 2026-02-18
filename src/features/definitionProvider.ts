@@ -10,13 +10,14 @@ export function registerDefinitionProvider(): vscode.Disposable {
             if (!range) return null;
 
             const word = document.getText(range);
-            let targetFunctionName = word;
+            let targetName = word;
             let targetUri = document.uri;
 
             // Si le mot contient un point (ex: "m.add")
             if (word.includes('.')) {
-                const [alias, funcName] = word.split('.');
-                targetFunctionName = funcName;
+                const parts = word.split('.');
+                const alias = parts[0];
+                targetName = parts[1];
 
                 // Trouver à quel fichier correspond l'alias
                 const imports = parseImportsForDefinition(document);
@@ -40,9 +41,16 @@ export function registerDefinitionProvider(): vscode.Disposable {
                 }
             }
 
-            // Chercher la ligne de la définition "fn nom_fonction" dans le fichier cible
-            const targetDoc = await vscode.workspace.openTextDocument(targetUri);
-            const lineIndex = findFunctionLine(targetDoc, targetFunctionName);
+            // Ouvrir le document cible (soit lui-même, soit un fichier importé)
+            let targetDoc: vscode.TextDocument;
+            try {
+                targetDoc = await vscode.workspace.openTextDocument(targetUri);
+            } catch {
+                return null;
+            }
+
+            // Chercher la ligne de définition (Fonction OU Variable)
+            const lineIndex = findDefinitionLine(targetDoc, targetName);
 
             if (lineIndex !== -1) {
                 // Retourne la position exacte (Ligne, Colonne 0)
@@ -55,12 +63,18 @@ export function registerDefinitionProvider(): vscode.Disposable {
 }
 
 /**
- * Trouve l'index de la ligne où la fonction est définie
+ * Cherche la ligne de définition d'un symbole (fn, let, mut)
  */
-function findFunctionLine(document: vscode.TextDocument, functionName: string): number {
-    const regex = new RegExp(`\\bfn\\s+${functionName}\\b`);
+function findDefinitionLine(document: vscode.TextDocument, name: string): number {
+    // Cette Regex cherche
+    // - Soit une fonction   fn name
+    // - Soit une variable   let name OU let mut name
+    // \b assure que l'on ne capture pas "let my_name" si on cherche "name"
+    const regex = new RegExp(`\\b(fn|let|mut)\\s+(?:mut\\s+)?${name}\\b`);
+
     for (let i = 0; i < document.lineCount; i++) {
-        if (regex.test(document.lineAt(i).text)) {
+        const lineText = document.lineAt(i).text;
+        if (regex.test(lineText)) {
             return i;
         }
     }
