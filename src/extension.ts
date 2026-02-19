@@ -8,6 +8,7 @@ import { registerReplCommands } from './commands/replCommand';
 import { registerSignatureProvider } from './features/signatureProvider';
 import { registerCompletionProvider } from './features/completionProvider';
 import { registerDefinitionProvider } from './features/definitionProvider';
+import { registerSymbolProvider } from './features/symbolProvider';
 
 let statusBarItem: vscode.StatusBarItem;
 
@@ -44,7 +45,8 @@ export function activate(context: vscode.ExtensionContext) {
         registerRunWithArgsCommand(context),
         registerAsmCommand(context),
         registerAsmWithArgsCommand(context),
-        registerDefinitionProvider()
+        registerDefinitionProvider(),
+        registerSymbolProvider()
     );
 
     // LOGIQUE DE DÉMARRAGE
