@@ -51,9 +51,13 @@ export function registerCompletionProvider(): vscode.Disposable {
                     if (fs.existsSync(fullPath)) {
                         const content = fs.readFileSync(fullPath, 'utf8');
                         const localFunctions = parseLocalFunctionNames(content);
+                        
                         for (const fn of localFunctions) {
-                            const item = new vscode.CompletionItem(fn.name, vscode.CompletionItemKind.Function);
-                            item.detail = fn.label;
+                            // Si la fonction n'est pas 'pub', on ne l'affiche pas dans l'autocomplétion
+                            if (!fn.isPublic) continue;
+
+                            const item = new vscode.CompletionItem(fn.name, vscode.CompletionItemKind.Method);
+                            item.detail = fn.label; // Affichera "pub fn name(...)"
                             item.documentation = new vscode.MarkdownString(fn.doc);
                             item.insertText = new vscode.SnippetString(`${fn.name}(\${1})`);
                             items.push(item);
@@ -87,17 +91,30 @@ function parseImports(document: vscode.TextDocument) {
 }
 
 /**
- * Scanne un fichier local pour extraire juste les noms et infos des fonctions
+ * Scanne un fichier local pour extraire les noms, docs et visibilité
  */
 function parseLocalFunctionNames(text: string) {
-    const functions: { name: string, label: string, doc: string }[] = [];
-    const fnRegex = /(?:((?:\/\/.*(?:\r?\n\s*\/\/.*)*)\s*))?fn\s+([a-zA-Z_]\w*)\s*\(([^)]*)\)/g;
+    const functions: { name: string, label: string, doc: string, isPublic: boolean }[] = [];
+    
+    // Regex:
+    // 1. (?:((?:\/\/.*(?:\r?\n\s*\/\/.*)*)\s*))?   Capture les commentaires docstrings (Groupe 1)
+    // 2. (pub\s+)?                                 Capture le mot clé 'pub ' (Groupe 2)
+    // 3. fn\s+([a-zA-Z_]\w*)                       Capture 'fn name' (Groupe 3 = name)
+    // 4. \s*\(([^)]*)\)                            Capture les paramètres (Groupe 4)
+    const fnRegex = /(?:((?:\/\/.*(?:\r?\n\s*\/\/.*)*)\s*))?(pub\s+)?fn\s+([a-zA-Z_]\w*)\s*\(([^)]*)\)/g;
+    
     let match;
     while ((match = fnRegex.exec(text)) !== null) {
+        const docComment = match[1];
+        const pubKeyword = match[2]; // Sera "pub " ou undefined
+        const name = match[3];
+        const params = match[4];
+
         functions.push({
-            name: match[2],
-            label: `fn ${match[2]}(${match[3]})`,
-            doc: match[1] ? match[1].replace(/\/\//g, '').trim() : "Fonction locale."
+            name: name,
+            label: `${pubKeyword ? 'pub ' : ''}fn ${name}(${params})`,
+            doc: docComment ? docComment.replace(/\/\//g, '').trim() : (pubKeyword ? "Public function." : "Private function."),
+            isPublic: !!pubKeyword // true si "pub" est présent, sinon false
         });
     }
     return functions;
