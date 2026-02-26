@@ -4,17 +4,24 @@
     "scopeName": "source.aelys",
     "patterns": [
         { "include": "#comments" },
-        { "include": "#keywords" },
         { "include": "#strings" },
         { "include": "#attributes" },
-        { "include": "#function-definition" },
-        { "include": "#variable-declaration" },
         { "include": "#imports" },
-        { "include": "#types" },
+        { "include": "#declarations" },
+        { "include": "#variable-declaration" },
+        { "include": "#type-annotations" },
+        { "include": "#generics" },
+        { "include": "#casts" },
+        { "include": "#keywords" },
+        { "include": "#builtins" },
         { "include": "#constants" },
+        { "include": "#types" },
+        { "include": "#method-calls" },
+        { "include": "#function-calls" },
+        { "include": "#namespaces" },
         { "include": "#numbers" },
         { "include": "#operators" },
-        { "include": "#function-calls" },
+        { "include": "#variable-usage" },
         { "include": "#punctuation" }
     ],
     "repository": {
@@ -22,7 +29,14 @@
             "patterns": [
                 {
                     "name": "comment.line.double-slash.aelys",
-                    "match": "//.*$"
+                    "begin": "//",
+                    "end": "$",
+                    "patterns": [
+                        {
+                            "name": "keyword.codetag.notation.aelys",
+                            "match": "\\b(TODO|FIXME|NOTE|HACK|XXX)\\b"
+                        }
+                    ]
                 }
             ]
         },
@@ -33,7 +47,7 @@
             "patterns": [
                 {
                     "name": "constant.character.escape.aelys",
-                    "match": "\\\\."
+                    "match": "\\\\(x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|[nrt\\\\\"'])"
                 },
                 {
                     "name": "meta.interpolation.aelys",
@@ -46,22 +60,48 @@
                         "0": { "name": "punctuation.definition.template-expression.end.aelys" }
                     },
                     "patterns": [
-                        { "include": "source.aelys" }
+                        { "include": "$self" }
                     ]
                 }
             ]
         },
         "attributes": {
-            "name": "entity.name.function.decorator.aelys",
-            "match": "@[a-zA-Z_][a-zA-Z0-9_]*"
-        },
-        "function-definition": {
             "patterns": [
                 {
-                    "match": "\\b(fn)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+                    "name": "entity.name.function.decorator.aelys",
+                    "match": "@[a-zA-Z_][a-zA-Z0-9_]*\\b"
+                }
+            ]
+        },
+        "imports": {
+            "patterns": [
+                {
+                    "match": "\\b(needs)\\s+([a-zA-Z_][a-zA-Z0-9_\\.]*)(?:\\s+(as)\\s+([a-zA-Z_][a-zA-Z0-9_]*))?",
                     "captures": {
-                        "1": { "name": "keyword.other.fn.aelys" },
-                        "2": { "name": "entity.name.function.aelys" }
+                        "1": { "name": "keyword.control.import.aelys" },
+                        "2": { "name": "entity.name.namespace.aelys" },
+                        "3": { "name": "keyword.control.import.as.aelys" },
+                        "4": { "name": "entity.name.namespace.alias.aelys" }
+                    }
+                }
+            ]
+        },
+        "declarations": {
+            "patterns": [
+                {
+                    "match": "\\b(?:(pub)\\s+)?(fn)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\b",
+                    "captures": {
+                        "1": { "name": "storage.modifier.pub.aelys" },
+                        "2": { "name": "storage.type.function.aelys" },
+                        "3": { "name": "entity.name.function.aelys" }
+                    }
+                },
+                {
+                    "match": "\\b(?:(pub)\\s+)?(struct)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\b",
+                    "captures": {
+                        "1": { "name": "storage.modifier.pub.aelys" },
+                        "2": { "name": "storage.type.struct.aelys" },
+                        "3": { "name": "entity.name.type.struct.aelys" }
                     }
                 }
             ]
@@ -69,23 +109,64 @@
         "variable-declaration": {
             "patterns": [
                 {
-                    "match": "\\b(let|mut)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+                    "comment": "Déclaration de constantes (TOUT_EN_MAJUSCULES)",
+                    "match": "\\b(let)\\s+(?:(mut)\\s+)?([A-Z][A-Z0-9_]*)\\b",
                     "captures": {
-                        "1": { "name": "keyword.other.aelys" },
-                        "2": { "name": "variable.other.assignment.aelys" }
+                        "1": { "name": "storage.type.let.aelys" },
+                        "2": { "name": "storage.modifier.mut.aelys" },
+                        "3": { "name": "variable.other.constant.aelys" }
+                    }
+                },
+                {
+                    "comment": "Déclaration de variables classiques",
+                    "match": "\\b(let)\\s+(?:(mut)\\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\\b",
+                    "captures": {
+                        "1": { "name": "storage.type.let.aelys" },
+                        "2": { "name": "storage.modifier.mut.aelys" },
+                        "3": { "name": "entity.name.variable.aelys" }
                     }
                 }
             ]
         },
-        "imports": {
+        "variable-usage": {
+            "match": "\\b[a-z_][a-zA-Z0-9_]*\\b",
+            "name": "variable.other.aelys"
+        },
+        "type-annotations": {
             "patterns": [
                 {
-                    "match": "\\b(needs|from|as)\\b",
-                    "name": "keyword.control.import.aelys"
+                    "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(:)",
+                    "captures": {
+                        "1": { "name": "variable.parameter.aelys" },
+                        "2": { "name": "keyword.operator.type.annotation.aelys" }
+                    }
                 },
                 {
-                    "match": "([a-zA-Z_][a-zA-Z0-9_]*)\\.(?=[a-zA-Z_])",
-                    "name": "entity.name.type.module.aelys"
+                    "match": "->",
+                    "name": "keyword.operator.return.aelys"
+                }
+            ]
+        },
+        "generics": {
+            "patterns": [
+                {
+                    "match": "(<)\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*(>)",
+                    "captures": {
+                        "1": { "name": "punctuation.bracket.angle.begin.aelys" },
+                        "2": { "name": "entity.name.type.generic.aelys" },
+                        "3": { "name": "punctuation.bracket.angle.end.aelys" }
+                    }
+                }
+            ]
+        },
+        "casts": {
+            "patterns": [
+                {
+                    "match": "\\b(as)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.operator.cast.aelys" },
+                        "2": { "name": "entity.name.type.aelys" }
+                    }
                 }
             ]
         },
@@ -93,33 +174,43 @@
             "patterns": [
                 {
                     "name": "keyword.control.aelys",
-                    "match": "\\b(if|else|while|for|in|step|return|break|continue|pub)\\b"
+                    "match": "\\b(if|else|while|for|in|step|return|break|continue)\\b"
                 },
                 {
-                    "name": "keyword.operator.logical.aelys",
-                    "match": "\\b(and|or|not)\\b"
+                    "name": "storage.modifier.pub.aelys",
+                    "match": "\\b(pub)\\b"
+                },
+                {
+                    "name": "storage.modifier.mut.aelys",
+                    "match": "\\b(mut)\\b"
+                },
+                {
+                    "name": "storage.type.let.aelys",
+                    "match": "\\b(let)\\b"
+                }
+            ]
+        },
+        "builtins": {
+            "patterns": [
+                {
+                    "name": "support.function.memory.aelys",
+                    "match": "\\b(alloc|free|load|store)\\b(?=\\s*\\()"
                 }
             ]
         },
         "types": {
             "patterns": [
                 {
-                    "name": "storage.type.primitive.aelys",
-                    "match": "\\b(int|float|string|bool|null|array|vec)\\b"
+                    "name": "support.type.primitive.aelys",
+                    "match": "\\b(int|float|string|bool|null|array|vec|i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|void|dynamic)\\b"
                 },
                 {
-                    "match": "\\b(Array|Vec)\\b",
-                    "name": "storage.type.container.aelys"
+                    "name": "support.type.container.aelys",
+                    "match": "\\b(Array|Vec)\\b"
                 },
                 {
-                    "match": "(<|\\|>)",
-                    "name": "punctuation.bracket.angle.aelys"
-                },
-                {
-                    "match": "(?<=:)\\s*([a-zA-Z_][a-zA-Z0-9_]*)",
-                    "captures": {
-                        "1": { "name": "storage.type.primitive.aelys" }
-                    }
+                    "name": "entity.name.type.aelys",
+                    "match": "\\b[A-Z][a-zA-Z0-9_]*\\b"
                 }
             ]
         },
@@ -134,8 +225,40 @@
                     "match": "\\bnull\\b"
                 },
                 {
-                    "name": "constant.other.caps.aelys",
-                    "match": "\\b[A-Z_][A-Z0-9_]+\\b"
+                    "comment": "Constantes tout en majuscules (ex: MAX_SIZE). Interdit les minuscules.",
+                    "name": "variable.other.constant.aelys",
+                    "match": "\\b[A-Z_][A-Z0-9_]*\\b"
+                }
+            ]
+        },
+        "method-calls": {
+            "patterns": [
+                {
+                    "match": "(\\.)\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+                    "captures": {
+                        "1": { "name": "punctuation.accessor.aelys" },
+                        "2": { "name": "entity.name.function.member.aelys" }
+                    }
+                }
+            ]
+        },
+        "function-calls": {
+            "patterns": [
+                {
+                    "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+                    "captures": {
+                        "1": { "name": "entity.name.function.call.aelys" }
+                    }
+                }
+            ]
+        },
+        "namespaces": {
+            "patterns": [
+                {
+                    "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\.)",
+                    "captures": {
+                        "1": { "name": "entity.name.namespace.aelys" }
+                    }
                 }
             ]
         },
@@ -150,44 +273,53 @@
                     "match": "\\b0b[01_]+\\b"
                 },
                 {
+                    "name": "constant.numeric.octal.aelys",
+                    "match": "\\b0o[0-7_]+\\b"
+                },
+                {
+                    "name": "constant.numeric.decimal.scientific.aelys",
+                    "match": "\\b[0-9][0-9_]*(\\.[0-9][0-9_]*)?([eE][+-]?[0-9_]+)\\b"
+                },
+                {
                     "name": "constant.numeric.decimal.aelys",
-                    "match": "\\b[0-9][0-9_]*(\\.[0-9][0-9_]*)?([eE][+-]?[0-9_]+)?\\b"
+                    "match": "\\b[0-9][0-9_]*(\\.[0-9][0-9_]*)?\\b"
                 }
             ]
         },
         "operators": {
             "patterns": [
                 {
-                    "name": "keyword.operator.comparison.aelys",
-                    "match": "(==|!=|<=|>=|<|>)"
+                    "name": "keyword.operator.logical.aelys",
+                    "match": "\\b(and|or|not)\\b|&&|\\|\\|"
+                },
+                {
+                    "name": "keyword.operator.assignment.compound.aelys",
+                    "match": "\\+=|-=|\\*=|/=|%="
                 },
                 {
                     "name": "keyword.operator.assignment.aelys",
-                    "match": "(=)"
+                    "match": "="
+                },
+                {
+                    "name": "keyword.operator.increment.aelys",
+                    "match": "\\+\\+|--"
+                },
+                {
+                    "name": "keyword.operator.comparison.aelys",
+                    "match": "==|!=|<=|>=|<|>"
                 },
                 {
                     "name": "keyword.operator.arithmetic.aelys",
-                    "match": "(\\+|\\-|\\*|/|%)"
+                    "match": "\\+|-|\\*|/|%"
                 },
                 {
                     "name": "keyword.operator.bitwise.aelys",
-                    "match": "(&|\\||\\^|~|<<|>>)"
-                }
-            ]
-        },
-        "function-calls": {
-            "patterns": [
-                {
-                    "match": "([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(",
-                    "captures": {
-                        "1": { "name": "entity.name.function.call.aelys" }
-                    }
+                    "match": "&|\\||\\^|~|<<|>>"
                 }
             ]
         },
         "punctuation": {
             "patterns": [
-                { "match": ":", "name": "keyword.operator.type.aelys" },
                 { "match": "\\.", "name": "punctuation.accessor.aelys" },
                 { "match": ",", "name": "punctuation.separator.aelys" },
                 { "match": ";", "name": "punctuation.terminator.aelys" },
