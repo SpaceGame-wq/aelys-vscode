@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
+
+async function fileExists(filePath: string): Promise<boolean> {
+    try { await fs.access(filePath); return true; } catch { return false; }
+}
 
 export function registerDefinitionProvider(): vscode.Disposable {
     return vscode.languages.registerDefinitionProvider('aelys', {
@@ -30,7 +34,8 @@ export function registerDefinitionProvider(): vscode.Disposable {
                     
                     for (const fName of fileNames) {
                         const fullPath = path.join(currentDir, fName);
-                        if (fs.existsSync(fullPath)) {
+                        // Lecture asynchrone
+                        if (await fileExists(fullPath)) {
                             targetUri = vscode.Uri.file(fullPath);
                             break;
                         }

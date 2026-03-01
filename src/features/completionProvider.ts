@@ -1,7 +1,17 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import { SIGNATURES } from '../docs';
+
+// Fonction utilitaire asynchrone pour vérifier si un fichier existe
+async function fileExists(filePath: string): Promise<boolean> {
+    try {
+        await fs.access(filePath);
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 export function registerCompletionProvider(): vscode.Disposable {
     return vscode.languages.registerCompletionItemProvider('aelys', {
@@ -36,8 +46,13 @@ export function registerCompletionProvider(): vscode.Disposable {
                         const item = new vscode.CompletionItem(funcName, vscode.CompletionItemKind.Function);
                         item.detail = sig.label;
                         item.documentation = new vscode.MarkdownString(sig.documentation);
-                        // Snippet automatique pour les parenthèses
-                        item.insertText = new vscode.SnippetString(`${funcName}(\${1})`);
+                        
+                        //  Snippet dynamique intelligent (ex: math.clamp(x, min, max))
+                        const snippetParams = sig.parameters
+                            .map((p, index) => `\${${index + 1}:${p.label.split(':')[0].trim()}}`)
+                            .join(', ');
+                        
+                        item.insertText = new vscode.SnippetString(`${funcName}(${snippetParams})`);
                         items.push(item);
                     }
                 }
@@ -48,8 +63,9 @@ export function registerCompletionProvider(): vscode.Disposable {
                 
                 for (const fName of fileNames) {
                     const fullPath = path.join(currentDir, fName);
-                    if (fs.existsSync(fullPath)) {
-                        const content = fs.readFileSync(fullPath, 'utf8');
+                    // Lecture asynchrone
+                    if (await fileExists(fullPath)) {
+                        const content = await fs.readFile(fullPath, 'utf8');
                         const localFunctions = parseLocalFunctionNames(content);
                         
                         for (const fn of localFunctions) {
@@ -59,7 +75,13 @@ export function registerCompletionProvider(): vscode.Disposable {
                             const item = new vscode.CompletionItem(fn.name, vscode.CompletionItemKind.Method);
                             item.detail = fn.label; // Affichera "pub fn name(...)"
                             item.documentation = new vscode.MarkdownString(fn.doc);
-                            item.insertText = new vscode.SnippetString(`${fn.name}(\${1})`);
+                            
+                            // Snippet dynamique pour les fonctions locales
+                            const snippetParams = fn.paramsList
+                                .map((p, index) => `\${${index + 1}:${p}}`)
+                                .join(', ');
+
+                            item.insertText = new vscode.SnippetString(`${fn.name}(${snippetParams})`);
                             items.push(item);
                         }
                         break;
@@ -94,7 +116,7 @@ function parseImports(document: vscode.TextDocument) {
  * Scanne un fichier local pour extraire les noms, docs et visibilité
  */
 function parseLocalFunctionNames(text: string) {
-    const functions: { name: string, label: string, doc: string, isPublic: boolean }[] = [];
+    const functions: { name: string, label: string, doc: string, isPublic: boolean, paramsList: string[] }[] = [];
     
     // Regex:
     // 1. (?:((?:\/\/.*(?:\r?\n\s*\/\/.*)*)\s*))?   Capture les commentaires docstrings (Groupe 1)
@@ -108,13 +130,20 @@ function parseLocalFunctionNames(text: string) {
         const docComment = match[1];
         const pubKeyword = match[2]; // Sera "pub " ou undefined
         const name = match[3];
-        const params = match[4];
+        const rawParams = match[4];
+        
+        // Extraction propre du nom des paramètres
+        const paramsList = rawParams.split(',')
+            .map(p => p.trim())
+            .filter(p => p.length > 0)
+            .map(p => p.split(':')[0].trim());
 
         functions.push({
             name: name,
-            label: `${pubKeyword ? 'pub ' : ''}fn ${name}(${params})`,
+            label: `${pubKeyword ? 'pub ' : ''}fn ${name}(${rawParams})`,
             doc: docComment ? docComment.replace(/\/\//g, '').trim() : (pubKeyword ? "Public function." : "Private function."),
-            isPublic: !!pubKeyword // true si "pub" est présent, sinon false
+            isPublic: !!pubKeyword, // true si "pub" est présent, sinon false
+            paramsList: paramsList // On stocke la liste pour le snippet
         });
     }
     return functions;

@@ -1,7 +1,11 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import { SIGNATURES, AelysSignature } from '../docs';
+
+async function fileExists(filePath: string): Promise<boolean> {
+    try { await fs.access(filePath); return true; } catch { return false; }
+}
 
 /**
  * Interface pour représenter un import détecté
@@ -95,9 +99,9 @@ async function getImportedSignatures(document: vscode.TextDocument, imports: Ael
             const fileNames = [`${imp.moduleName}.aelys`, `${imp.moduleName}.ae`];
             for (const fName of fileNames) {
                 const fullPath = path.join(currentDir, fName);
-                if (fs.existsSync(fullPath)) {
+                if (await fileExists(fullPath)) {
                     try {
-                        const content = fs.readFileSync(fullPath, 'utf8');
+                        const content = await fs.readFile(fullPath, 'utf8');
                         // Si "needs utils as u", on préfixe les fonctions par "u."
                         const sigs = parseSignaturesFromText(content, imp.alias || "");
                         allImportedSigs = { ...allImportedSigs, ...sigs };
