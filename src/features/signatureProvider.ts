@@ -24,10 +24,11 @@ function parseSignaturesFromText(text: string, prefix: string = ""): { [key: str
     const signatures: { [key: string]: AelysSignature } = {};
 
     // Regex
-    // ((\/\/.*(?:\r?\n\s*\/\/.*)*)\s*)?     Groupe 2 = capture plusieurs lignes de commentaires commençant par //
-    // fn\s+([a-zA-Z_]\w*)                   Groupe 3 = le nom de la fonction
-    // \s*\(([^)]*)\)                        Groupe 4 = tout ce qu'il y a entre parenthèses
-    const fnRegex = /(?:((?:\/\/.*(?:\r?\n\s*\/\/.*)*)\s*))?fn\s+([a-zA-Z_]\w*)\s*\(([^)]*)\)/g;
+    // ((\/\/.*(?:\r?\n\s*\/\/.*)*)\s*)?     Groupe 1 = capture commentaires
+    // fn\s+([a-zA-Z_]\w*)                   Groupe 2 = le nom de la fonction
+    // (?:\s*<[^>]+>)?                       IGNORE = Type générique optionnel <T>
+    // \s*\(([^)]*)\)                        Groupe 3 = tout ce qu'il y a entre parenthèses
+    const fnRegex = /(?:((?:\/\/.*(?:\r?\n\s*\/\/.*)*)\s*))?fn\s+([a-zA-Z_]\w*)(?:\s*<[^>]+>)?\s*\(([^)]*)\)/g;
 
     let match;
     while ((match = fnRegex.exec(text)) !== null) {
@@ -80,6 +81,17 @@ async function getImportedSignatures(document: vscode.TextDocument, imports: Ael
     let allImportedSigs: { [key: string]: AelysSignature } = {};
     const currentDir = path.dirname(document.uri.fsPath);
 
+    // Injection de la stdlib auto-enregistrée (Depuis 0.19.14-b)
+    const autoRegistered = ["io", "math", "string", "convert", "time", "bytes"];
+    for (const mod of autoRegistered) {
+        for (const [key, sig] of Object.entries(SIGNATURES)) {
+            if (key.startsWith(mod + ".")) {
+                allImportedSigs[key] = sig;
+            }
+        }
+    }
+
+    // Gestion des imports explicites restants (fichiers locaux ou alias custom)
     for (const imp of imports) {
         if (imp.isStd) {
             // GESTION DES LIBRAIRIES STANDARDS (std.io, etc.)
@@ -168,18 +180,22 @@ export function registerSignatureProvider(): vscode.Disposable {
                 }
             }
 
-            // Si aucune fonction trouvée ou pas dans notre dictionnaire, on quitte
-            if (!found || !functionName || !allSignatures[functionName]) {
+            // On vérifie qu'on a bien trouvé un nom de fonction.
+            // On ne quite pas si allSignatures[functionName] n'existe pas tout de suite,
+            // sinon les méthodes d'instances (my_str.trim) ne pourraient jamais être résolues par le fallback.
+            if (!found || !functionName) {
                 return undefined;
             }
 
             let sigInfo = allSignatures[functionName];
 
-            // Si non trouvé (ex: l'utilisateur a tapé 'print' au lieu de 'io.print')
-            if (!sigInfo && !functionName.includes('.')) {
-                // On cherche dans les signatures globales si une fonction finit par ce nom
-                // ex: si functionName est "print", on trouve "io.print"
-                const globalKey = Object.keys(SIGNATURES).find(k => k.split('.').pop() === functionName);
+            // Si non trouvé de base (ex: 'print' global, ou méthode d'instance 'my_str.trim')
+            if (!sigInfo) {
+                // On extrait juste la partie après le point, ou on garde le nom si c'est 'print'
+                const method = functionName.includes('.') ? functionName.split('.').pop()! : functionName;
+                
+                // On cherche dans nos signatures globales si on a quelque chose qui finit par ce nom
+                const globalKey = Object.keys(SIGNATURES).find(k => k.split('.').pop() === method);
                 if (globalKey) {
                     sigInfo = SIGNATURES[globalKey];
                 }
@@ -203,7 +219,7 @@ export function registerSignatureProvider(): vscode.Disposable {
             signatureHelp.activeSignature = 0;
             
             // On s'assure de ne pas dépasser l'index des paramètres existants
-            signatureHelp.activeParameter = Math.min(paramIndex, sigInfo.parameters.length - 1);
+            signatureHelp.activeParameter = Math.min(paramIndex, Math.max(0, sigInfo.parameters.length - 1));
 
             return signatureHelp;
         }

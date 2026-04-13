@@ -13,7 +13,9 @@ export const HOVER_DOCS: { [key: string]: string } = {
     "break": "### Keyword: `break`\n---\nExits the current loop immediately.",
     "continue": "### Keyword: `continue`\n---\nSkips to the next iteration of the loop.",
     "needs": "### Keyword: `needs`\n---\nImports a module.\n```rust\nneeds std.fs\nneeds std.math as m\n```",
-    "as": "### Keyword: `as`\n---\nAliasing for imports.",
+    "as": "### Keyword: `as`\n---\nThe `as` keyword has two uses:\n\n1. **Type casting**: Explicitly convert a value to a specific type.\n```rust\nlet x = 3.14 as int\n```\n2. **Import aliasing**: Assign a different name to an imported module.\n```rust\nneeds std.math as m\n```",
+    "print": "```rust\nprint(value)\n```\nPrints value to stdout without a newline. (Auto-registered)",
+    "println": "```rust\nprintln(value)\n```\nPrints value followed by a newline. (Auto-registered)",
     "pub": "### Keyword: `pub`\n---\nMarks a function as public (exported from the module).",
     "and": "### Operator: `and`\n---\nLogical AND (short-circuiting).",
     "or": "### Operator: `or`\n---\nLogical OR (short-circuiting).",
@@ -782,5 +784,22 @@ export const SIGNATURES: { [key: string]: AelysSignature } = {
         label: "vec.reserve(n)",
         parameters: [{ label: "n", documentation: "Additional capacity." }],
         documentation: "Pre-allocates space to avoid reallocations."
+    },
+
+    // Print
+    "print": {
+        label: "print(value)",
+        parameters: [{ label: "value", documentation: "The value to display." }],
+        documentation: "Prints a value to stdout without a newline."
+    },
+    "println": {
+        label: "println(value)",
+        parameters: [{ label: "value", documentation: "The value to display." }],
+        documentation: "Prints a value followed by a newline."
+    },
+    "print_inline": {
+        label: "print_inline(value)",
+        parameters: [{ label: "value", documentation: "The value to display." }],
+        documentation: "Prints a value."
     }
 };

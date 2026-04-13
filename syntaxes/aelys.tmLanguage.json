@@ -205,7 +205,7 @@
             "patterns": [
                 {
                     "name": "support.type.primitive.aelys",
-                    "match": "\\b(int|float|string|bool|null|array|vec|i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|void|dynamic)\\b"
+                    "match": "\\b(int|float|string|bool|null|array|vec|i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|int8|int16|int32|int64|uint8|uint16|uint32|uint64|float32|float64|void|dynamic)\\b"
                 },
                 {
                     "name": "support.type.container.aelys",
